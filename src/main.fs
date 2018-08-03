@@ -97,7 +97,7 @@ type Event =
 type State =
   { Rows : int list
     Cols : char list
-    //Active : option<Position> 
+    Active : option<Position> 
     Cells : Map<Position, string> }
 
 // ----------------------------------------------------------------------------
@@ -106,9 +106,9 @@ type State =
 
 let update state = function
   | StartEdit(pos) -> 
-      state 
+      { state with Active = Some pos }
   | FinishEdit ->
-      state 
+      { state with Active = None }
   | UpdateValue(pos, value) ->
       { state with Cells = Map.add pos value state.Cells }
 
@@ -132,7 +132,7 @@ let renderView trigger pos value =
 
 let renderCell trigger pos state =
   let value = Map.tryFind pos state.Cells |> Option.defaultValue ""
-  if pos = ('A', 1) then
+  if Some pos = state.Active then
     renderEditor trigger pos value
   else
     renderView trigger pos value
@@ -141,18 +141,18 @@ let renderSheet trigger state =
   let cols = state.Cols
   let rows = state.Rows
   h?table [] [
-    h?tr [] [
+    yield h?tr [] [
       yield h?th [] []
       yield h?th [] [ text "A" ]
       yield h?th [] [ text "B" ]
     ]
-    h?tbody [] [
-      h?tr [] [
+    yield h?tbody [] [
+      yield h?tr [] [
         yield h?th [] [ text "1" ]
         yield renderCell trigger ('A', 1) state 
         yield renderCell trigger ('B', 1) state 
       ]
-      h?tr [] [
+      yield h?tr [] [
         yield h?th [] [ text "2" ]
         yield renderCell trigger ('A', 2) state 
         yield renderCell trigger ('B', 2) state 
@@ -167,6 +167,7 @@ let renderSheet trigger state =
 let initial = 
   { Cols = ['A' .. 'T']
     Rows = [1 .. 20]
+    Active = None
     Cells = Map.empty }
 
 app "main" initial renderSheet update
